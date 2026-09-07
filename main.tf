@@ -8,6 +8,7 @@ variable "env_prefix" {}
 variable "my_ip_range" {}
 variable "instance_type" {}
 variable "public_ssh_key_location" {}
+variable "private_ssh_key_location" {}
 
 resource "aws_vpc" "my-app-vpc" {
   cidr_block = var.vpc_cidr_block
@@ -114,9 +115,38 @@ resource "aws_instance" "my-app-server" {
     associate_public_ip_address = true
     key_name = aws_key_pair.ssh-key.key_name
 
+    # runs bash commands on the server once, only on server creation
     user_data = file("entry-script.sh")
 
+    # forces recreation of server, and in-turn re-run of entry point shell cmds that run once on server creation
     user_data_replace_on_change = true
+
+    # creates ssh login to server so that provisioners can run on the server after server provisioning
+    connection {
+        type = "ssh"
+        host = self.public_ip
+        user = "ec2-user"
+        private_key = file(var.private_ssh_key_location)
+    }
+
+    # copy files or directories from local to newly created resource
+    provisioner "file" {
+        source = "entry-script.sh"
+        destination = "/home/ec2-user/entry-script-on-ec2.sh"
+    }
+
+    # connects to a remote resource (using connection) and invokes script on it. Note that the execution is inside the instance, therefore, the file to be executed must be on the provisioned server!
+    provisioner "remote-exec" {
+        inline = ["/home/ec2-user/entry-script-on-ec2.sh"]
+        # a cleaner way to execute a script remotely on provisioned server is using script attribute as follows. In this case, we won't need the provisioner "file" block because script copies and executes file in a single command
+        # inline = "entry-script.sh"
+    }
+
+    # j
+    provisioner "local-exec" {
+        command = "echo ${self.public_ip} > output.txt"
+    }
+
     tags = {
         Name: "${var.env_prefix}-server"
     }
