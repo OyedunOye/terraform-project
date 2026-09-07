@@ -1,14 +1,6 @@
 # region, access_key and secret_key were configured in ~/.aws/credentials file
 provider "aws" {}
 
-variable "vpc_cidr_block" {}
-variable "subnet_cidr_block" {}
-variable "avail_zone" {}
-variable "env_prefix" {}
-variable "my_ip_range" {}
-variable "instance_type" {}
-variable "public_ssh_key_location" {}
-
 resource "aws_vpc" "my-app-vpc" {
   cidr_block = var.vpc_cidr_block
   tags = {
@@ -16,36 +8,14 @@ resource "aws_vpc" "my-app-vpc" {
   }
 }
 
-# creates subnet in newly created vpc. vpc and subnet are being created in the same plan. This apply command also generates a route table
-resource "aws_subnet" "my-app-subnet-1" {
-    vpc_id            = aws_vpc.my-app-vpc.id
-    cidr_block        = var.subnet_cidr_block
-    availability_zone = var.avail_zone
-    tags = {
-        Name: "${var.env_prefix}-subnet-1"
-    }
-}
-
-# creates an internet gateway that is associated to the external route in default created route table
-resource "aws_internet_gateway" "my-app-igw" {
+# use the subnet module, note that where we used `.var` to pull variable values, the variables must be defined in variables.tf of both the module and the root directory.
+module "my-app-subnet" {
+    source = "./modules/subnet"
+    subnet_cidr_block = var.subnet_cidr_block
+    avail_zone = var.avail_zone
+    env_prefix = var.avail_zone
     vpc_id = aws_vpc.my-app-vpc.id
-    tags = {
-        Name: "${var.env_prefix}-igw"
-  }
-}
-
-# instead of creating another route table, use the default created on vpc creation and add igw to it
-resource "aws_default_route_table" "main-rtb" {
     default_route_table_id = aws_vpc.my-app-vpc.default_route_table_id
-
-    route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.my-app-igw.id
-    }
-
-    tags = {
-        Name: "${var.env_prefix}-main-rtb"
-    }
 }
 
 # this is where incoming (ingress) and outgoing (egress) traffic via ports are defined for server instance level. This modifies the default sg in the current vpc
@@ -93,10 +63,6 @@ data "aws_ami" "latest-amazon-linux-image" {
     }
 }
 
-output "aws_ami_id" {
-    value = data.aws_ami.latest-amazon-linux-image.id
-}
-
 # using an existing ssh key pair on my computer
 resource "aws_key_pair" "ssh-key" {
     key_name = "server-key"
@@ -104,10 +70,11 @@ resource "aws_key_pair" "ssh-key" {
 
 }
 
+# note how subnet_id references the output from child module: module.name_given_to_module_in_this_parent_module.output_name_in_child_module.id
 resource "aws_instance" "my-app-server" {
     ami = data.aws_ami.latest-amazon-linux-image.id
     instance_type = var.instance_type
-    subnet_id = aws_subnet.my-app-subnet-1.id
+    subnet_id = module.my-app-subnet.subnet.id
     vpc_security_group_ids = [aws_default_security_group.default-sg.id]
     availability_zone = var.avail_zone
 
@@ -120,8 +87,4 @@ resource "aws_instance" "my-app-server" {
     tags = {
         Name: "${var.env_prefix}-server"
     }
-}
-
-output "ec2-public_ip" {
-  value = aws_instance.my-app-server.public_ip
 }
