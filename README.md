@@ -29,6 +29,7 @@ terraform destroy
 ```
 
 ## Project Structure
+```
 terraform-project/
 ├── .gitignore
 ├── .terraform.lock.hcl
@@ -36,6 +37,7 @@ terraform-project/
 ├── README.md
 ├── main.tf
 └── providers.tf
+```
 
 
 ## Branches in This Project
@@ -43,5 +45,3 @@ terraform-project/
 - feature/provisioners: explore how provisioners are used to configure provisioned servers
 - feature/modules: explore organizing of my infrastructure code into related groups called modules
 - feature/eks: explores provisioning of a full eks cluster using existing modules from terraform registry.
-
-
