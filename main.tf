@@ -142,10 +142,10 @@ resource "aws_instance" "my-app-server" {
         # inline = "entry-script.sh"
     }
 
-    # j
-    provisioner "local-exec" {
-        command = "echo ${self.public_ip} > output.txt"
-    }
+    # this just generates a file that I do not access or need. Removed it to prevent unnecessary clutter
+    # provisioner "local-exec" {
+    #     command = "echo ${self.public_ip} > output.txt"
+    # }
 
     tags = {
         Name: "${var.env_prefix}-server"
