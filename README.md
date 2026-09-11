@@ -25,7 +25,7 @@ Defined in `main.tf`:
   - `connection` block - opens an SSH connection to the instance's public IP as `ec2-user`, authenticating with a configurable private key
   - `provisioner "file"` - copies `entry-script.sh` from the local machine to `/home/ec2-user/entry-script-on-ec2.sh` on the instance
   - `provisioner "remote-exec"` - runs the copied script on the instance over the SSH connection
-  - `provisioner "local-exec"` - runs a command on the machine running Terraform, writing the instance's public IP to a local `output.txt`
+  - A `provisioner "local-exec"` that wrote the instance's public IP to a local `output.txt` was removed (left commented out in `main.tf`) — that file was never actually read after being generated, so it was just unnecessary clutter on whatever machine ran `apply`.
 
   > These provisioners are illustrative: the `entry-script.sh` logic already runs once via `user_data`, so the `file`/`remote-exec` pair effectively re-runs the same bootstrap steps a second time, over SSH, after boot.
 
@@ -42,8 +42,6 @@ Defined in `main.tf`:
 |---|---|
 | `aws_ami_id` | ID of the AMI used for the instance |
 | `ec2-public_ip` | Public IP address of the EC2 instance |
-
-Additionally, `local-exec` writes the instance's public IP to a local `output.txt` file after apply.
 
 ## Prerequisites
 
@@ -108,7 +106,6 @@ During `apply`, Terraform will wait for SSH to become available on the instance 
 
 - The nginx container is reachable at `http://<ec2-public_ip>:8080`
 - The instance can be accessed via `ssh ec2-user@<ec2-public_ip>`
-- `output.txt` in the local project directory will contain the instance's public IP
 
 ## Notes
 
