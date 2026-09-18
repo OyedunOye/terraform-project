@@ -11,6 +11,12 @@ variable "public_subnet_cidr_blocks" {
 variable "instance_type" {
     type = string
 }
+variable "console_account_arn" {
+    type = string
+}
+variable "console_account_policy" {
+    type = string
+}
 
 variable "aws_availability_zones" {
     type = list(string)

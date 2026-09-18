@@ -35,6 +35,22 @@ module "eks" {
         }
     }
 
+    access_entries = {
+        console_viewer = {
+            principal_arn = var.console_account_arn
+
+            policy_associations = {
+                admin = {
+                    policy_arn    = var.console_account_policy
+
+                    access_scope = {
+                        type = "cluster"
+                    }
+                }
+            }
+        }
+    }
+
     tags = {
         environment = "development"
         application = "my-app"
